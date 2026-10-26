@@ -15,9 +15,7 @@ st.set_page_config(
 )
 
 st.title("Interactive Business Dashboard")
-st.caption(
-    "Executive KPI Monitoring | Sales | Customer Analytics"
-)
+st.caption("Executive KPI Monitoring | Sales | Customer Analytics")
 
 # --------------------------------------------------
 # LOAD DATA
@@ -47,6 +45,16 @@ def load_data():
     data["month"] = pd.to_datetime(data["month"], errors="coerce")
     data = data.dropna(subset=["month"]).copy()
 
+    numeric_columns = [
+        "revenue", "orders", "new_customers", "acquisition_spend",
+        "customers_at_start", "customers_lost"
+    ]
+
+    for col in numeric_columns:
+        data[col] = pd.to_numeric(
+            data[col], errors="coerce"
+        ).fillna(0)
+
     return data
 
 
@@ -66,8 +74,8 @@ if df.empty:
 st.sidebar.header("Dashboard Filters")
 
 months = sorted(df["month"].dt.strftime("%Y-%m").unique())
-all_regions = sorted(df["region"].dropna().unique())
-all_categories = sorted(df["category"].dropna().unique())
+all_regions = sorted(df["region"].dropna().unique().tolist())
+all_categories = sorted(df["category"].dropna().unique().tolist())
 
 selected_months = st.sidebar.multiselect(
     "Select months",
@@ -112,6 +120,7 @@ customers_lost = filtered["customers_lost"].sum()
 
 cac = marketing_spend / new_customers if new_customers else 0
 aov = revenue / orders if orders else 0
+
 churn = (
     customers_lost / customers_start * 100
     if customers_start else 0
@@ -177,7 +186,10 @@ with right:
         y="revenue",
         color="category",
         title="Category Performance",
-        labels={"revenue": "Revenue ($)", "category": "Category"}
+        labels={
+            "revenue": "Revenue ($)",
+            "category": "Category"
+        }
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -187,7 +199,6 @@ with right:
 # --------------------------------------------------
 st.subheader("Geographic Revenue Map")
 
-# Convert abbreviations into country names recognized by Plotly.
 country_names = {
     "USA": "United States",
     "UK": "United Kingdom",
@@ -260,16 +271,16 @@ st.dataframe(
     hide_index=True
 )
 
+# --------------------------------------------------
+# CSV DOWNLOAD
+# --------------------------------------------------
 st.download_button(
-    "Download Filtered Data (CSV)",
+    label="Download Filtered Data (CSV)",
     data=filtered.to_csv(index=False).encode("utf-8"),
     file_name="filtered_business_data.csv",
-    mime="text/csv"
+    mime="text/csv",
+    key="filtered_csv_download"
 )
-
-# --------------------------------------------------
-# PDF REPORT
-# --------------------------------------------------
 
 # --------------------------------------------------
 # PDF REPORT
@@ -279,6 +290,7 @@ def create_pdf():
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
+    # Write each line from the left page margin.
     def write_line(text, height=7):
         pdf.set_x(pdf.l_margin)
         pdf.multi_cell(
@@ -300,16 +312,18 @@ def create_pdf():
         "Reporting period: "
         + (", ".join(selected_months) if selected_months else "None")
     )
+
     write_line(
         "Regions: "
         + (", ".join(map(str, regions)) if regions else "None")
     )
+
     write_line(
         "Categories: "
         + (", ".join(map(str, categories)) if categories else "None")
     )
 
-    # Executive KPIs
+    # Executive KPI summary
     pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
     write_line("Executive KPIs", 9)
@@ -326,8 +340,11 @@ def create_pdf():
     write_line("Revenue by Category", 9)
 
     pdf.set_font("Helvetica", size=10)
+
     for _, row in category_data.iterrows():
-        write_line(f"{row['category']}: ${row['revenue']:,.2f}")
+        write_line(
+            f"{row['category']}: ${row['revenue']:,.2f}"
+        )
 
     # Revenue by region
     region_data = (
@@ -341,12 +358,16 @@ def create_pdf():
     write_line("Revenue by Region", 9)
 
     pdf.set_font("Helvetica", size=10)
+
     for _, row in region_data.iterrows():
-        write_line(f"{row['region']}: ${row['revenue']:,.2f}")
+        write_line(
+            f"{row['region']}: ${row['revenue']:,.2f}"
+        )
 
     # Disclaimer
     pdf.ln(4)
     pdf.set_font("Helvetica", "I", 9)
+
     write_line(
         "Note: This report uses illustrative sample data for portfolio "
         "demonstration, not verified company results. CAC is marketing "
@@ -356,15 +377,19 @@ def create_pdf():
         "demonstration calculation."
     )
 
-    # Return PDF as bytes for Streamlit
-    return bytes(pdf.output())
-from io import BytesIO
+    # Convert the PDF to downloadable bytes.
+    # dest='S' supports FPDF versions that return a string or byte data.
+    pdf_output = pdf.output(dest="S")
 
-output = BytesIO()
-pdf.output(output)
-return output.getvalue()
+    if isinstance(pdf_output, str):
+        return pdf_output.encode("latin-1")
 
-# PDF download button
+    return bytes(pdf_output)
+
+
+# --------------------------------------------------
+# PDF DOWNLOAD BUTTON
+# --------------------------------------------------
 try:
     pdf_bytes = create_pdf()
 
@@ -376,8 +401,8 @@ try:
         key="dashboard_pdf_download"
     )
 
-except Exception as e:
-    st.error(f"PDF generation failed: {e}")
+except Exception as error:
+    st.error(f"PDF generation failed: {error}")
 
 # --------------------------------------------------
 # FOOTER
@@ -386,6 +411,3 @@ st.caption(
     "Portfolio demonstration | Illustrative sample data | "
     "Built with Python, Streamlit and Plotly"
 )
-
-
-
