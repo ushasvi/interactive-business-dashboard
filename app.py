@@ -270,98 +270,64 @@ st.download_button(
 # --------------------------------------------------
 # PDF REPORT
 # --------------------------------------------------
+
+# --------------------------------------------------
+# PDF REPORT
+# --------------------------------------------------
 def create_pdf():
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
+    def write_line(text, height=7):
+        pdf.set_x(pdf.l_margin)
+        pdf.multi_cell(
+            w=pdf.epw,
+            h=height,
+            text=str(text),
+            new_x="LMARGIN",
+            new_y="NEXT"
+        )
+
+    # Report title
     pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(
-        0, 12,
-        "Business KPI Dashboard Report",
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
-    
-def write_line(text, height=7):
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(
-        w=pdf.epw,
-        h=height,
-        text=str(text),
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
+    write_line("Business KPI Dashboard Report", 12)
 
+    # Selected filters
+    pdf.set_font("Helvetica", size=10)
 
-    pdf.set_font("Helvetica", size=11)
-
-    pdf.multi_cell(
-        0, 7,
+    write_line(
         "Reporting period: "
         + (", ".join(selected_months) if selected_months else "None")
     )
-
-    pdf.multi_cell(
-        0, 7,
-        "Regions: " + (", ".join(map(str, regions)) if regions else "None")
+    write_line(
+        "Regions: "
+        + (", ".join(map(str, regions)) if regions else "None")
     )
-
-    pdf.multi_cell(
-        0, 7,
+    write_line(
         "Categories: "
         + (", ".join(map(str, categories)) if categories else "None")
     )
 
+    # Executive KPIs
     pdf.ln(4)
-
-    # Executive KPI summary
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(
-        0, 9, "Executive KPIs",
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
+    write_line("Executive KPIs", 9)
 
-    
-    # Print selected filters safely in the PDF
     pdf.set_font("Helvetica", size=10)
-
-    filter_lines = [
-        "Reporting period: "
-        + (", ".join(selected_months) if selected_months else "None"),
-        "Regions: "
-        + (", ".join(map(str, regions)) if regions else "None"),
-        "Categories: "
-        + (", ".join(map(str, categories)) if categories else "None"),
-    ]
-
-    for line in filter_lines:
-        pdf.multi_cell(
-            w=180,
-            h=7,
-            text=line,
-            new_x="LMARGIN",
-            new_y="NEXT",
-        )
-
+    write_line(f"Total Revenue: ${revenue:,.2f}")
+    write_line(f"Customer Acquisition Cost (CAC): ${cac:,.2f}")
+    write_line(f"Customer Churn: {churn:.2f}%")
+    write_line(f"Average Order Value: ${aov:,.2f}")
 
     # Revenue by category
     pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(
-        0, 9, "Revenue by Category",
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
+    write_line("Revenue by Category", 9)
 
     pdf.set_font("Helvetica", size=10)
-
     for _, row in category_data.iterrows():
-        pdf.multi_cell(
-            0, 7,
-            f"{row['category']}: ${row['revenue']:,.2f}"
-        )
+        write_line(f"{row['category']}: ${row['revenue']:,.2f}")
 
     # Revenue by region
     region_data = (
@@ -370,41 +336,35 @@ def write_line(text, height=7):
         .sort_values("revenue", ascending=False)
     )
 
-    pdf.ln(3)
+    pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(
-        0, 9, "Revenue by Region",
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
+    write_line("Revenue by Region", 9)
 
     pdf.set_font("Helvetica", size=10)
-
     for _, row in region_data.iterrows():
-        pdf.multi_cell(
-            0, 7,
-            f"{row['region']}: ${row['revenue']:,.2f}"
-        )
+        write_line(f"{row['region']}: ${row['revenue']:,.2f}")
 
-    # Data disclaimer
+    # Disclaimer
     pdf.ln(4)
     pdf.set_font("Helvetica", "I", 9)
-    pdf.multi_cell(
-        0, 6,
+    write_line(
         "Note: This report uses illustrative sample data for portfolio "
         "demonstration, not verified company results. CAC is marketing "
         "spend divided by new customers. AOV is revenue divided by orders. "
-        "Churn is calculated using the sum of customer losses divided by "
-        "the sum of starting-customer counts in the selected records. "
-        "This is a simplified demonstration calculation."
+        "Churn is calculated using customer losses divided by starting "
+        "customers in the selected records. This is a simplified "
+        "demonstration calculation."
     )
 
-pdf.output("dashboard_report.pdf")
+    # Return PDF as bytes for Streamlit
+    return bytes(pdf.output())
+from io import BytesIO
 
-with open("dashboard_report.pdf", "rb") as f:
-    return f.read()
-# Generate the PDF before displaying the download button
+output = BytesIO()
+pdf.output(output)
+return output.getvalue()
 
+# PDF download button
 try:
     pdf_bytes = create_pdf()
 
@@ -418,6 +378,7 @@ try:
 
 except Exception as e:
     st.error(f"PDF generation failed: {e}")
+
 # --------------------------------------------------
 # FOOTER
 # --------------------------------------------------
