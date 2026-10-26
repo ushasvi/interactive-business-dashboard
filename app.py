@@ -312,24 +312,28 @@ def create_pdf():
         new_y="NEXT"
     )
 
-    pdf.set_font("Helvetica", size=11)
+    
+    # Print selected filters safely in the PDF
+    pdf.set_font("Helvetica", size=10)
 
-    report_lines = [
-        f"Total Revenue: ${revenue:,.2f}",
-        f"Customer Acquisition Cost: ${cac:,.2f}",
-        f"Customer Churn Rate: {churn:.2f}%",
-        f"Average Order Value: ${aov:,.2f}",
-        f"Total Orders: {orders:,.0f}",
-        f"New Customers: {new_customers:,.0f}",
-        f"Marketing Spend: ${marketing_spend:,.2f}"
+    filter_lines = [
+        "Reporting period: "
+        + (", ".join(selected_months) if selected_months else "None"),
+        "Regions: "
+        + (", ".join(map(str, regions)) if regions else "None"),
+        "Categories: "
+        + (", ".join(map(str, categories)) if categories else "None"),
     ]
 
-    for line in report_lines:
-        pdf.cell(
-            0, 8, line,
+    for line in filter_lines:
+        pdf.multi_cell(
+            w=180,
+            h=7,
+            text=line,
             new_x="LMARGIN",
-            new_y="NEXT"
+            new_y="NEXT",
         )
+
 
     # Revenue by category
     pdf.ln(4)
