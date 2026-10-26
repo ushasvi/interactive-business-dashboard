@@ -282,6 +282,17 @@ def create_pdf():
         new_x="LMARGIN",
         new_y="NEXT"
     )
+    
+def write_line(text, height=7):
+    pdf.set_x(pdf.l_margin)
+    pdf.multi_cell(
+        w=pdf.epw,
+        h=height,
+        text=str(text),
+        new_x="LMARGIN",
+        new_y="NEXT"
+    )
+
 
     pdf.set_font("Helvetica", size=11)
 
@@ -411,14 +422,5 @@ st.caption(
     "Built with Python, Streamlit and Plotly"
 )
 
-def write_line(text, height=7):
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(
-        w=pdf.epw,
-        h=height,
-        text=str(text),
-        new_x="LMARGIN",
-        new_y="NEXT"
-    )
 
 
