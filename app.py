@@ -410,3 +410,15 @@ st.caption(
     "Portfolio demonstration | Illustrative sample data | "
     "Built with Python, Streamlit and Plotly"
 )
+
+def write_line(text, height=7):
+    pdf.set_x(pdf.l_margin)
+    pdf.multi_cell(
+        w=pdf.epw,
+        h=height,
+        text=str(text),
+        new_x="LMARGIN",
+        new_y="NEXT"
+    )
+
+
