@@ -389,14 +389,19 @@ def create_pdf():
     )
 
     return bytes(pdf.output())
+# Generate the PDF before displaying the download button
+try:
+    pdf_bytes = create_pdf()
 
-
-st.download_button(
-    "Download Dashboard Report (PDF)",
-    data=create_pdf(),
-    file_name="dashboard_report.pdf",
-    mime="application/pdf"
-)
+    st.download_button(
+        label="Download Dashboard Report (PDF)",
+        data=pdf_bytes,
+        file_name="dashboard_report.pdf",
+        mime="application/pdf",
+        key="dashboard_pdf_download"
+    )
+except Exception as e:
+    st.error(f"PDF generation failed: {e}")
 
 # --------------------------------------------------
 # FOOTER
