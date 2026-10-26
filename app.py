@@ -399,21 +399,25 @@ def write_line(text, height=7):
         "This is a simplified demonstration calculation."
     )
 
-    return bytes(pdf.output())
+pdf.output("dashboard_report.pdf")
+
+with open("dashboard_report.pdf", "rb") as f:
+    return f.read()
 # Generate the PDF before displaying the download button
+
 try:
     pdf_bytes = create_pdf()
 
     st.download_button(
-        label="Download Dashboard Report (PDF)",
+        label="📄 Download Dashboard Report (PDF)",
         data=pdf_bytes,
         file_name="dashboard_report.pdf",
         mime="application/pdf",
         key="dashboard_pdf_download"
     )
+
 except Exception as e:
     st.error(f"PDF generation failed: {e}")
-
 # --------------------------------------------------
 # FOOTER
 # --------------------------------------------------
